@@ -11,9 +11,8 @@
 
 char *prompt(void);
 char **split_command(char *command);
-void command_exec(char **argv);
-char *check_path(char *command);
-char *search_command_path(char *command);
+int command_exec(char **argv, char **path_array);
+char *search_command_path(char *command, char **directories_array);
 int dierctory_count(char *path);
 char **split_path(void);
 char **replace_argv0(char **argv, char *full_path);

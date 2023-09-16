@@ -8,9 +8,9 @@
  * Return: path to the command if found
  * NULL if not found
 */
-char *search_command_path(char *command)
+char *search_command_path(char *command, char **directories_array)
 {
-	char **directories_array, *command_path;
+	char *command_path;
 	int i = 0;
 	size_t arraysize, commandsize = strlen(command);
 	struct stat st;
@@ -19,8 +19,6 @@ char *search_command_path(char *command)
 	{
 		return (command);
 	}
-
-	directories_array = split_path();
 
 	while (directories_array[i] != NULL)
 	{
@@ -33,13 +31,11 @@ char *search_command_path(char *command)
 		if (stat(command_path, &st) == 0)
 		{
 			printf("command path is %s\n", command_path);
-			string_array_free(directories_array);
 			return (command_path);
 		}
 		free(command_path);
 		i++;
 	}
-	string_array_free(directories_array);
 	printf("command %s: NOT FOUND\n", command);
 	return (NULL);
 
@@ -65,30 +61,43 @@ char **replace_argv0(char **argv, char *full_path)
  * @argv: array of the command and and it's arguments
  * Return: 0 on success -1 on error
 */
-void command_exec(char **argv)
+int command_exec(char **argv, char **path_array)
 {
-	int status;
+	int status, i;
 	char *command_path;
-	pid_t child_pid; /*, terminated_pid;*/
+	pid_t child_pid, terminated_pid;
 
-	command_path = search_command_path(argv[0]);
+	command_path = search_command_path(argv[0], path_array);
 
 	if (command_path != NULL)
 	{
 		if (command_path != argv[0])
 			argv = replace_argv0(argv, command_path);
 
+		printf("Executing: ");
+		for (i = 0; argv[i] != NULL; i++)
+		{
+			printf("%s ", argv[i]);
+		}
+		printf("\n");
+
 		child_pid = fork();
 		if (child_pid == 0)
 		{
-			execve(argv[0], argv, NULL);
+			if (execve(argv[0], argv, NULL) == -1)
+				return (-1);
+			exit(0);
 		}
 		else if (child_pid > 0)
 		{
-			waitpid(child_pid, &status, 0);
+			terminated_pid = waitpid(child_pid, &status, 0);
+			if (terminated_pid == child_pid)
+			{
+				return (0);
+			}
 		}
 		else
 			perror("fork failed\n");
 	}
-	string_array_free(argv);
+	return (-1);
 }
