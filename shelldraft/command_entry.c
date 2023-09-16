@@ -11,7 +11,7 @@ char *prompt(void)
 	size_t size = 0;
 	ssize_t size2;
 
-	printf("$ ");
+	printf("($) ");
 	size2 = getline(&command, &size, stdin);
 	command[size2 - 1] = '\0';
 	if (feof(stdin) != 0)
