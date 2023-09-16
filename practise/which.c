@@ -110,10 +110,7 @@ int main (void)
 	full_path = search_path(array, command, count);
 	if (full_path != NULL)
 	{
-		if (execve(full_path, argv, NULL) == -1)
-    	{
-    	    perror("Error:");
-    	}
+		
 	}
 	for (i = 0; i < count ; i++)
 	{
