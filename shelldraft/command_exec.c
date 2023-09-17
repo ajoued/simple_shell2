@@ -3,12 +3,16 @@
 /**
  * search_command_path - search for the command
  * @command: command to be searched for
+ * @directories_array: an array of the directories in the path variable
+ * @cmd_count: number of the command
+ * @av: name of the program
  * Description: search for the command in the path
  * environment variable
  * Return: path to the command if found
  * NULL if not found
 */
-char *search_command_path(char *command, char **directories_array)
+char *search_command_path(char *command,
+char **directories_array, int cmd_count, char *av)
 {
 	char *command_path;
 	int i = 0;
@@ -30,13 +34,12 @@ char *search_command_path(char *command, char **directories_array)
 		strcat(command_path, command);
 		if (stat(command_path, &st) == 0)
 		{
-			printf("command path is %s\n", command_path);
 			return (command_path);
 		}
 		free(command_path);
 		i++;
 	}
-	printf("command %s: NOT FOUND\n", command);
+	print_err(cmd_count, "not found", command, av);
 	return (NULL);
 
 }
@@ -59,45 +62,52 @@ char **replace_argv0(char **argv, char *full_path)
 /**
  * command_exec - executes the command in a child process
  * @argv: array of the command and and it's arguments
+ * @path_array: the array of directories in path variable
+ * @prg_name: program name
+ * @cmd_count: command number
  * Return: 0 on success -1 on error
 */
-int command_exec(char **argv, char **path_array)
+int command_exec(char **argv, char **path_array,
+char *prg_name, int cmd_count)
 {
-	int status, i;
+	int status;
 	char *command_path;
 	pid_t child_pid, terminated_pid;
 
-	command_path = search_command_path(argv[0], path_array);
-
-	if (command_path != NULL)
+	if (strcmp(argv[0], "exit") == 0)
 	{
-		if (command_path != argv[0])
-			argv = replace_argv0(argv, command_path);
-
-		printf("Executing: ");
-		for (i = 0; argv[i] != NULL; i++)
+		shell_exit(argv, prg_name, cmd_count);
+	}
+	else if (strcmp(argv[0], "env") == 0)
+	{
+		ptrenv();
+	}
+	else
+	{
+		command_path = search_command_path(argv[0],
+		path_array, cmd_count,  prg_name);
+		if (command_path != NULL)
 		{
-			printf("%s ", argv[i]);
-		}
-		printf("\n");
-
-		child_pid = fork();
-		if (child_pid == 0)
-		{
-			if (execve(argv[0], argv, NULL) == -1)
-				return (-1);
-			exit(0);
-		}
-		else if (child_pid > 0)
-		{
-			terminated_pid = waitpid(child_pid, &status, 0);
-			if (terminated_pid == child_pid)
+			if (command_path != argv[0])
+				argv = replace_argv0(argv, command_path);
+			child_pid = fork();
+			if (child_pid == 0)
 			{
-				return (0);
+				if (execve(argv[0], argv, NULL) == -1)
+					return (-1);
+				exit(0);
 			}
+			else if (child_pid > 0)
+			{
+				terminated_pid = waitpid(child_pid, &status, 0);
+				if (terminated_pid == child_pid)
+				{
+					return (0);
+				}
+			}
+			else
+				perror("fork failed\n");
 		}
-		else
-			perror("fork failed\n");
 	}
 	return (-1);
 }
