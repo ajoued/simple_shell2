@@ -8,19 +8,26 @@
 char *prompt(void)
 {
 	char *command = NULL;
-	size_t size = 0;
-	ssize_t size2;
+	size_t n = 0;
+	ssize_t size;
 
 	/*checks if file opened in interractive mode to print the dollar sign*/
 	if (isatty(STDIN_FILENO) == 1)
 		printf("($) ");
-	size2 = getline(&command, &size, stdin);
-	command[size2 - 1] = '\0';
+	
+	size = getline(&command, &n, stdin);
+
 	if (feof(stdin) != 0)
 	{
 		free(command);
 		exit(0);
 	}
+	if (size == 1 && command[size - 1] == '\n')
+		{
+		free(command);
+		return (NULL);
+		}
+	command[size - 1] = '\0';
 	return (command);
 }
 
@@ -73,6 +80,7 @@ void shell_exit(char **argv, char *av, int cmd_count)
 	}
 	else
 	{
+		string_array_free(argv);
 		exit(status);
 	}
 }
